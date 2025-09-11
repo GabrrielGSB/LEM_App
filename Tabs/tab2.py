@@ -6,42 +6,6 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
-
-def plot_csv_data(dataPath, y1_variable, y2_variable=None, time_divisor=1):
-    try:
-        df = pd.read_csv(dataPath)
-
-        if y1_variable not in df.columns:
-            raise ValueError(f"Variável '{y1_variable}' não encontrada no CSV.")
-        if y2_variable and y2_variable not in df.columns:
-            raise ValueError(f"Variável '{y2_variable}' não encontrada no CSV.")
-
-        df['time'] = df['time'] / time_divisor
-
-        corteS = None
-        corteI = None
-        plt.figure(figsize=(10, 6))
-        plt.plot(df['time'].iloc[corteI:corteS], df[y1_variable].iloc[corteI:corteS], label=y1_variable, linewidth=2)
-
-        if y2_variable:
-            plt.plot(df['time'].iloc[corteI:corteS], df[y2_variable].iloc[corteI:corteS], label=y2_variable, linewidth=2)
-
-        plt.xlabel("Tempo (s)")
-        plt.ylabel("Valor")
-        plt.title("Gráfico de Dados do CSV")
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show()
-
-    except Exception as e:
-        msg = QMessageBox()
-        msg.setIcon(QMessageBox.Critical)
-        msg.setText("Erro ao plotar gráfico")
-        msg.setInformativeText(str(e))
-        msg.setWindowTitle("Erro")
-        msg.exec_()
-
 def aplicar_filtros_csv(nome_arquivo, colunas_alvo, janela=100, metodo_csv='ponderada_gaussiana', salvar_arquivo='dados_filtrados.csv'):
     """
     Aplica um filtro de média móvel (simples ou ponderada) em colunas de um arquivo CSV.
@@ -179,6 +143,7 @@ class tab2(QWidget):
                                                         border-radius: 10px;}
                                             QPushButton:hover {background-color: lightgreen;}""")
         self.botao_plotar.clicked.connect(self.plotarGrafico)
+        self.botao_plotar.clicked.connect(self.modificarEscala)
         #------------------------------------------------------------------------
 
         # Label para mostrar nome do arquivo
@@ -187,7 +152,15 @@ class tab2(QWidget):
         # Dropdowns de seleção de eixo X e Y
         self.dropdown_x = QComboBox(self.planoDeFundo)
         self.dropdown_x.setGeometry(200, 300, 180, 30)
-        self.dropdown_x.setPlaceholderText("Selecionar eixo X")
+
+        if hasattr(self.dropdown_x, "setPlaceholderText"):
+         self.dropdown_x.setPlaceholderText("Selecionar eixo X")
+        else:
+            # fallback: torna editável e usa lineEdit placeholder (readOnly pra evitar digitação)
+            self.dropdown_x.setEditable(True)
+            self.dropdown_x.lineEdit().setReadOnly(True)
+            self.dropdown_x.lineEdit().setPlaceholderText("Selecionar eixo X")
+
         self.dropdown_x.setStyleSheet("""QComboBox {background-color: #ADD8E6;  
                                                     border: 2px solid #1E90FF;  
                                                     border-radius:    10px;
@@ -197,7 +170,7 @@ class tab2(QWidget):
                                                                             
                                          QComboBox:hover {background-color: #BFEFFF;}
                                                                             
-                                         QComboBox::drop-down {border:     none;
+                                         QComboBox::drop-down {bself.botao_plotar.clicked.connect(self.plotarGrafico)order:     none;
                                                                background: transparent;
                                                                width:      25px;}
                                                                             
@@ -208,7 +181,14 @@ class tab2(QWidget):
 
         self.dropdown_y = QComboBox(self.planoDeFundo)
         self.dropdown_y.setGeometry(420, 300, 180, 30)
-        self.dropdown_y.setPlaceholderText("Selecionar eixo Y")
+
+        if hasattr(self.dropdown_y, "setPlaceholderText"):
+         self.dropdown_y.setPlaceholderText("Selecionar eixo Y")
+        else:
+            self.dropdown_y.setEditable(True)
+            self.dropdown_y.lineEdit().setReadOnly(True)
+            self.dropdown_y.lineEdit().setPlaceholderText("Selecionar eixo Y")
+
         self.dropdown_y.setStyleSheet("""QComboBox {background-color: #ADD8E6;  
                                                     border: 2px solid #1E90FF;  
                                                     border-radius:    10px;
@@ -231,7 +211,13 @@ class tab2(QWidget):
         
         self.dropdown_y2 = QComboBox(self.planoDeFundo)
         self.dropdown_y2.setGeometry(640, 300, 180, 30)
-        self.dropdown_y2.setPlaceholderText("Segundo eixo Y (opcional)")
+        if hasattr(self.dropdown_y2, "setPlaceholderText"):
+         self.dropdown_y2.setPlaceholderText("Selecionar 2° eixo Y")
+        else:
+            self.dropdown_y2.setEditable(True)
+            self.dropdown_y2.lineEdit().setReadOnly(True)
+            self.dropdown_y2.lineEdit().setPlaceholderText("Selecionar 2° eixo Y")
+
         self.dropdown_y2.setStyleSheet("""QComboBox {background-color: #ADD8E6;  
                                                     border: 2px solid #1E90FF;  
                                                     border-radius:    10px;
@@ -319,24 +305,22 @@ class tab2(QWidget):
         if not self.dataPath:
             QMessageBox.warning(self, "Nenhum arquivo", "Selecione primeiro um CSV.")
             return
-
-        # === Definir escala (pode ser fixa ou pegar de dropdown) ===
+        
         escala = "100"
 
-        # Caminho do script converterDados.py
-        scriptPath = "/home/GGSB/Códigos/LEM_App/Utility/converterDados.py"
+        scriptPath = "/home/raitecgeral/Gonzaga/LEM_App/LEM_App/Utility/converterDados.py"
 
         # Saída esperada
         caminho_transformado = os.path.splitext(self.dataPath)[0] + "_transformado.csv"
 
         # Cria processo
         self.processo = QProcess(self)
-        self.processo.start("python3", [scriptPath, self.dataPath, "--escala", escala])
+        self.processo.start("python3", [scriptPath, self.dataPath, escala])
 
         # Conecta sinais
         self.processo.readyReadStandardOutput.connect(self.ler_saida)
         self.processo.readyReadStandardError.connect(self.ler_erro)
-        self.processo.finished.connect(lambda: self.plotarArquivoTransformado(caminho_transformado))
+        self.processo.finished.connect(lambda: self.plotarGrafico(caminho_transformado))
 
 
     def ler_saida(self):
@@ -347,46 +331,38 @@ class tab2(QWidget):
         erro = self.processo.readAllStandardError().data().decode()
         print("STDERR:", erro)
 
+    def plotarGrafico(self, caminho=None):
+        # Se não foi passado caminho, tenta usar o CSV transformado padrão
+        if caminho is None:
+            caminho = os.path.splitext(self.dataPath)[0] + "_transformado.csv"
 
-    def plotarGrafico(self):
-        caminho_filtrado = 'dados_filtrados.csv'
-
-        if not os.path.exists(caminho_filtrado):
-            QMessageBox.warning(self, "Arquivo não encontrado", "O arquivo 'dados_filtrados.csv' ainda não foi gerado.")
+        if not os.path.exists(caminho):
+            QMessageBox.warning(self, "Arquivo não encontrado", f"O arquivo '{caminho}' não existe.")
             return
-
-        eixo_x  = self.dropdown_x.currentText()
-        eixo_y1 = self.dropdown_y.currentText()
-        eixo_y2 = self.dropdown_y2.currentText()
-
-        if not eixo_x or not eixo_y1:
-            QMessageBox.warning(self, "Seleção inválida", "Selecione pelo menos os eixos X e Y1.")
-            return
-    
-        if eixo_y2 and eixo_y1 == eixo_y2:
-            QMessageBox.warning(self, "Seleção inválida", "Os eixos Y1 e Y2 não podem ser iguais.")
-            return
-
 
         try:
-            df = pd.read_csv(caminho_filtrado)
+            df = pd.read_csv(caminho)
 
-            if eixo_x not in df.columns:
-                raise ValueError(f"Eixo X '{eixo_x}' não encontrado no arquivo.")
-            if eixo_y1 not in df.columns:
-                raise ValueError(f"Eixo Y1 '{eixo_y1}' não encontrado no arquivo.")
-            if eixo_y2 and eixo_y2 not in df.columns:
-                raise ValueError(f"Eixo Y2 '{eixo_y2}' não encontrado no arquivo.")
+            # Colunas fixas
+            eixo_x  = 'time'
+            eixo_y1 = 'Forca'
+            eixo_y2 = 'kalman_angle_roll' if 'kalman_angle_roll' in df.columns else None
 
+            # Converte para numpy para blindar contra erros
+            x_vals  = df[eixo_x].to_numpy()
+            y1_vals = df[eixo_y1].to_numpy()
+            y2_vals = df[eixo_y2].to_numpy() if eixo_y2 else None
+
+            # Plotagem
             plt.figure(figsize=(10, 6))
-            plt.plot(df[eixo_x], df[eixo_y1], label=eixo_y1, linewidth=2)
+            plt.plot(x_vals, y1_vals, label=eixo_y1, linewidth=2)
 
-            if eixo_y2:
-                plt.plot(df[eixo_x], df[eixo_y2], label=eixo_y2, linewidth=2)
+            if y2_vals is not None:
+                plt.plot(x_vals, y2_vals, label=eixo_y2, linewidth=2)
 
             plt.xlabel(eixo_x)
             plt.ylabel("Valor")
-            plt.title("Gráfico de Dados Filtrados")
+            plt.title("Gráfico de Dados Transformados")
             plt.legend()
             plt.grid(True)
             plt.tight_layout()
@@ -394,6 +370,62 @@ class tab2(QWidget):
 
         except Exception as e:
             QMessageBox.critical(self, "Erro ao plotar", str(e))
+    
+    # def plotarGrafico(self, caminho):
+    #     # caminho_filtrado = 'dados_filtrados.csv'
+
+    #     # if not os.path.exists(caminho_filtrado):
+    #     #     QMessageBox.warning(self, "Arquivo não encontrado", 
+    #     #                         "O arquivo 'dados_filtrados.csv' ainda não foi gerado.")
+    #     #     return
+
+    #     eixo_x  = self.dropdown_x.currentText()
+    #     eixo_y1 = self.dropdown_y.currentText()
+    #     eixo_y2 = self.dropdown_y2.currentText()
+
+    #     if not eixo_x or not eixo_y1:
+    #         QMessageBox.warning(self, "Seleção inválida", 
+    #                             "Selecione pelo menos os eixos X e Y1.")
+    #         return
+
+    #     if eixo_y2 and eixo_y1 == eixo_y2:
+    #         QMessageBox.warning(self, "Seleção inválida", 
+    #                             "Os eixos Y1 e Y2 não podem ser iguais.")
+    #         return
+
+    #     try:
+    #         df = pd.read_csv(caminho)
+
+    #         # validações
+    #         for eixo, nome in [(eixo_x, "X"), (eixo_y1, "Y1")]:
+    #             if eixo not in df.columns:
+    #                 raise ValueError(f"Eixo {nome} '{eixo}' não encontrado no arquivo.")
+
+    #         if eixo_y2 and eixo_y2 not in df.columns:
+    #             raise ValueError(f"Eixo Y2 '{eixo_y2}' não encontrado no arquivo.")
+
+    #         # converte tudo pra numpy para blindar contra erros de indexação
+    #         x_vals  = df[eixo_x].to_numpy()
+    #         y1_vals = df[eixo_y1].to_numpy()
+    #         y2_vals = df[eixo_y2].to_numpy() if eixo_y2 else None
+
+    #         # plotagem
+    #         plt.figure(figsize=(10, 6))
+    #         plt.plot(x_vals, y1_vals, label=eixo_y1, linewidth=2)
+
+    #         if y2_vals is not None:
+    #             plt.plot(x_vals, y2_vals, label=eixo_y2, linewidth=2)
+
+    #         plt.xlabel(eixo_x)
+    #         plt.ylabel("Valor")
+    #         plt.title("Gráfico de Dados Filtrados")
+    #         plt.legend()
+    #         plt.grid(True)
+    #         plt.tight_layout()
+    #         plt.show()
+
+    #     except Exception as e:
+    #         QMessageBox.critical(self, "Erro ao plotar", str(e))
 
 
 

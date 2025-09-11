@@ -1,6 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import argparse
+import sys
 import os
 
 def processar_csv(input_csv, escala):
@@ -35,11 +35,13 @@ def processar_csv(input_csv, escala):
     df_filtrado.to_csv(output_csv, index=False)
     print(f"Arquivo salvo como: {output_csv}")
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("csv_file", help="Caminho para o arquivo CSV")
-    parser.add_argument("--escala", type=int, help="Escala (kg)")
 
-    args = parser.parse_args()
-    escala = args.escala
-    processar_csv(args.csv_file, escala)
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        print("Uso: python converterDados.py <arquivo_csv> <escala>")
+        sys.exit(1)
+
+    arquivo = sys.argv[1]
+    escala = int(sys.argv[2])
+
+    processar_csv(arquivo, escala)
