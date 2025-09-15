@@ -131,19 +131,31 @@ class tab2(QWidget):
                                                         border-radius: 10px;}
                                             QPushButton:hover {background-color: lightblue;}""")
         self.configButton.clicked.connect(self.openConfigWindown)
-        #-----------------------------------------------------------------s-------
+        #------------------------------------------------------------------------
 
-        # Botão para plotar o gráfico-------------------------------------------
-        self.botao_plotar = QPushButton("Plotar Gráfico", self.planoDeFundo)
-        self.botao_plotar.move(300, 350)
-        self.botao_plotar.setFixedSize(400, 50)
+        # Botão para plotar o gráfico dados--------------------------------------
+        self.botao_plotar = QPushButton("Plotar Gráfico Dados Brutos", self.planoDeFundo)
+        self.botao_plotar.move(225, 350)
+        self.botao_plotar.setFixedSize(250, 50)
         self.botao_plotar.setStyleSheet("""QPushButton {background-color: blue; 
                                                         color: white; font-size: 14px;
                                                         font-weight: bold; 
                                                         border-radius: 10px;}
                                             QPushButton:hover {background-color: lightgreen;}""")
-        self.botao_plotar.clicked.connect(self.plotarGrafico)
-        self.botao_plotar.clicked.connect(self.modificarEscala)
+        self.botao_plotar.clicked.connect(self.plotarGraficoDadosBrutos)
+        #------------------------------------------------------------------------
+
+        # Botão para plotar o gráfico tensão deformação--------------------------
+        self.botao_plotar = QPushButton("Plotar Gráfico Tensão Deformação", self.planoDeFundo)
+        self.botao_plotar.move(525, 350)
+        self.botao_plotar.setFixedSize(250, 50)
+        self.botao_plotar.setStyleSheet("""QPushButton {background-color: blue; 
+                                                        color: white; font-size: 14px;
+                                                        font-weight: bold; 
+                                                        border-radius: 10px;}
+                                            QPushButton:hover {background-color: lightgreen;}""")
+        self.botao_plotar.clicked.connect(lambda: self.plotarGraficoTensaoDef())
+        # self.botao_plotar.clicked.connect(self.modificarEscala)
         #------------------------------------------------------------------------
 
         # Label para mostrar nome do arquivo
@@ -302,7 +314,7 @@ class tab2(QWidget):
 
 
     def modificarEscala(self):
-        if not self.dataPath:
+        if not self.dataPath:# self.botao_plotar.clicked.connect(self.modificarEscala)
             QMessageBox.warning(self, "Nenhum arquivo", "Selecione primeiro um CSV.")
             return
         
@@ -320,7 +332,7 @@ class tab2(QWidget):
         # Conecta sinais
         self.processo.readyReadStandardOutput.connect(self.ler_saida)
         self.processo.readyReadStandardError.connect(self.ler_erro)
-        self.processo.finished.connect(lambda: self.plotarGrafico(caminho_transformado))
+        self.processo.finished.connect(lambda: self.plotarGraficoTensaoDef(caminho_transformado))
 
 
     def ler_saida(self):
@@ -331,7 +343,7 @@ class tab2(QWidget):
         erro = self.processo.readAllStandardError().data().decode()
         print("STDERR:", erro)
 
-    def plotarGrafico(self, caminho=None):
+    def plotarGraficoTensaoDef(self, caminho=None):
         # Se não foi passado caminho, tenta usar o CSV transformado padrão
         if caminho is None:
             caminho = os.path.splitext(self.dataPath)[0] + "_transformado.csv"
@@ -344,25 +356,22 @@ class tab2(QWidget):
             df = pd.read_csv(caminho)
 
             # Colunas fixas
-            eixo_x  = 'time'
-            eixo_y1 = 'Forca'
-            eixo_y2 = 'kalman_angle_roll' if 'kalman_angle_roll' in df.columns else None
+            eixo_x  = 'Deslocamento (mm)'
+            eixo_y1 = 'Forca (N)'
+           
 
             # Converte para numpy para blindar contra erros
             x_vals  = df[eixo_x].to_numpy()
             y1_vals = df[eixo_y1].to_numpy()
-            y2_vals = df[eixo_y2].to_numpy() if eixo_y2 else None
-
+    
             # Plotagem
             plt.figure(figsize=(10, 6))
             plt.plot(x_vals, y1_vals, label=eixo_y1, linewidth=2)
 
-            if y2_vals is not None:
-                plt.plot(x_vals, y2_vals, label=eixo_y2, linewidth=2)
 
             plt.xlabel(eixo_x)
-            plt.ylabel("Valor")
-            plt.title("Gráfico de Dados Transformados")
+            plt.ylabel("Força")
+            plt.title("Gráfico Tensão Deformação")
             plt.legend()
             plt.grid(True)
             plt.tight_layout()
@@ -371,61 +380,61 @@ class tab2(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Erro ao plotar", str(e))
     
-    # def plotarGrafico(self, caminho):
-    #     # caminho_filtrado = 'dados_filtrados.csv'
+    def plotarGraficoDadosBrutos(self, caminho):
+        caminho_filtrado = 'dados_filtrados.csv'
 
-    #     # if not os.path.exists(caminho_filtrado):
-    #     #     QMessageBox.warning(self, "Arquivo não encontrado", 
-    #     #                         "O arquivo 'dados_filtrados.csv' ainda não foi gerado.")
-    #     #     return
+        if not os.path.exists(caminho_filtrado):
+            QMessageBox.warning(self, "Arquivo não encontrado", 
+                                "O arquivo 'dados_filtrados.csv' ainda não foi gerado.")
+            return
 
-    #     eixo_x  = self.dropdown_x.currentText()
-    #     eixo_y1 = self.dropdown_y.currentText()
-    #     eixo_y2 = self.dropdown_y2.currentText()
+        eixo_x  = self.dropdown_x.currentText()
+        eixo_y1 = self.dropdown_y.currentText()
+        eixo_y2 = self.dropdown_y2.currentText()
 
-    #     if not eixo_x or not eixo_y1:
-    #         QMessageBox.warning(self, "Seleção inválida", 
-    #                             "Selecione pelo menos os eixos X e Y1.")
-    #         return
+        if not eixo_x or not eixo_y1:
+            QMessageBox.warning(self, "Seleção inválida", 
+                                "Selecione pelo menos os eixos X e Y1.")
+            return
 
-    #     if eixo_y2 and eixo_y1 == eixo_y2:
-    #         QMessageBox.warning(self, "Seleção inválida", 
-    #                             "Os eixos Y1 e Y2 não podem ser iguais.")
-    #         return
+        if eixo_y2 and eixo_y1 == eixo_y2:
+            QMessageBox.warning(self, "Seleção inválida", 
+                                "Os eixos Y1 e Y2 não podem ser iguais.")
+            return
 
-    #     try:
-    #         df = pd.read_csv(caminho)
+        try:
+            df = pd.read_csv(caminho_filtrado)
 
-    #         # validações
-    #         for eixo, nome in [(eixo_x, "X"), (eixo_y1, "Y1")]:
-    #             if eixo not in df.columns:
-    #                 raise ValueError(f"Eixo {nome} '{eixo}' não encontrado no arquivo.")
+            # validações
+            for eixo, nome in [(eixo_x, "X"), (eixo_y1, "Y1")]:
+                if eixo not in df.columns:
+                    raise ValueError(f"Eixo {nome} '{eixo}' não encontrado no arquivo.")
 
-    #         if eixo_y2 and eixo_y2 not in df.columns:
-    #             raise ValueError(f"Eixo Y2 '{eixo_y2}' não encontrado no arquivo.")
+            if eixo_y2 and eixo_y2 not in df.columns:
+                raise ValueError(f"Eixo Y2 '{eixo_y2}' não encontrado no arquivo.")
 
-    #         # converte tudo pra numpy para blindar contra erros de indexação
-    #         x_vals  = df[eixo_x].to_numpy()
-    #         y1_vals = df[eixo_y1].to_numpy()
-    #         y2_vals = df[eixo_y2].to_numpy() if eixo_y2 else None
+            # converte tudo pra numpy para blindar contra erros de indexação
+            x_vals  = df[eixo_x].to_numpy()
+            y1_vals = df[eixo_y1].to_numpy()
+            y2_vals = df[eixo_y2].to_numpy() if eixo_y2 else None
 
-    #         # plotagem
-    #         plt.figure(figsize=(10, 6))
-    #         plt.plot(x_vals, y1_vals, label=eixo_y1, linewidth=2)
+            # plotagem
+            plt.figure(figsize=(10, 6))
+            plt.plot(x_vals, y1_vals, label=eixo_y1, linewidth=2)
 
-    #         if y2_vals is not None:
-    #             plt.plot(x_vals, y2_vals, label=eixo_y2, linewidth=2)
+            if y2_vals is not None:
+                plt.plot(x_vals, y2_vals, label=eixo_y2, linewidth=2)
 
-    #         plt.xlabel(eixo_x)
-    #         plt.ylabel("Valor")
-    #         plt.title("Gráfico de Dados Filtrados")
-    #         plt.legend()
-    #         plt.grid(True)
-    #         plt.tight_layout()
-    #         plt.show()
+            plt.xlabel(eixo_x)
+            plt.ylabel("Valor")
+            plt.title("Gráfico de Dados Filtrados")
+            plt.legend()
+            plt.grid(True)
+            plt.tight_layout()
+            plt.show()
 
-    #     except Exception as e:
-    #         QMessageBox.critical(self, "Erro ao plotar", str(e))
+        except Exception as e:
+            QMessageBox.critical(self, "Erro ao plotar", str(e))
 
 
 
