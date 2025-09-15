@@ -46,7 +46,7 @@ if __name__ == "__main__":
     porta_serial = sys.argv[1]
 
     dadosTempo = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    CSV_name = f"/home/raitecgeral/Gonzaga/LEM_App/LEM_App/Dados/dados_{dadosTempo}.csv"
+    CSV_name = f"Dados\dados_{dadosTempo}.csv"
 
     with open(CSV_name, mode='w', newline='') as file:
         writer = csv.writer(file)

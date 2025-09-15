@@ -140,7 +140,7 @@ class tab1(QWidget):
         #-------------------------------------------------------------------------
 
         # Executa o script de coleta com argumento do CSV
-        self.executarScript("/home/raitecgeral/Gonzaga/LEM_App/LEM_App/Utility/iniciarColetaDados.py")
+        self.executarScript("Utility\iniciarColetaDados.py")
         
 
     def executarScript(self, scriptPath):

@@ -25,9 +25,9 @@ class MainWindow(QMainWindow):
         tabs.setMovable(False)
 
         # Adiciona as Classes que implementam cada TAB de navegação
-        tabs.addTab(tab1("/home/raitecgeral/Gonzaga/LEM_App/LEM_App/Imagens/im1.png"), 
+        tabs.addTab(tab1("Imagens\im1.png"), 
                          "Receber Dados em Tempo Real")
-        tabs.addTab(tab2("/home/raitecgeral/Gonzaga/LEM_App/LEM_App/Imagens/im1.png"), 
+        tabs.addTab(tab2("Imagens\im1.png"), 
                          "Plotar Gráficos")
         layout.addWidget(tabs) 
         #-----------------------------------------------------------
