@@ -6,7 +6,7 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
-def aplicar_filtros_csv(nome_arquivo, colunas_alvo, janela=100, metodo_csv='ponderada_gaussiana', salvar_arquivo='dados_filtrados.csv'):
+def aplicar_filtros_csv(nome_arquivo, colunas_alvo, janela=100, metodo_csv='ponderada_gaussiana', salvar_arquivo='Dados/dados_filtrados.csv'):
     """
     Aplica um filtro de média móvel (simples ou ponderada) em colunas de um arquivo CSV.
 
@@ -123,7 +123,7 @@ class tab2(QWidget):
 
         # Botão para abrir nova janela-------------------------------------------
         self.configButton = QPushButton("Aplicar Filtro", self.planoDeFundo)
-        self.configButton.move(300, 200)
+        self.configButton.move(300, 175)
         self.configButton.setFixedSize(400, 50)
         self.configButton.setStyleSheet("""QPushButton {background-color: blue; 
                                                         color: white; font-size: 14px;
@@ -154,8 +154,8 @@ class tab2(QWidget):
                                                         font-weight: bold; 
                                                         border-radius: 10px;}
                                             QPushButton:hover {background-color: lightgreen;}""")
-        self.botao_plotar.clicked.connect(lambda: self.plotarGraficoTensaoDef())
-        # self.botao_plotar.clicked.connect(self.modificarEscala)
+        self.botao_plotar.clicked.connect(self.modificarEscala)
+        # self.botao_plotar.clicked.connect(lambda: self.plotarGraficoTensaoDef())
         #------------------------------------------------------------------------
 
         # Label para mostrar nome do arquivo
@@ -274,7 +274,7 @@ class tab2(QWidget):
             self.layout_h.addWidget(self.label)
 
             # Carregar colunas do arquivo filtrado, se existir
-            caminho_filtrado = 'dados_filtrados.csv'
+            caminho_filtrado = 'Dados/dados_filtrados.csv'
             if os.path.exists(caminho_filtrado):
                 try:
                     df_filtrado = pd.read_csv(caminho_filtrado)
@@ -323,7 +323,8 @@ class tab2(QWidget):
         scriptPath = "/home/raitecgeral/Gonzaga/LEM_App/LEM_App/Utility/converterDados.py"
 
         # Saída esperada
-        caminho_transformado = os.path.splitext(self.dataPath)[0] + "_transformado.csv"
+        print(self.dataPath)
+        caminho_transformado = os.path.splitext(self.dataPath)[0] + "_tensãoDeformação.csv"
 
         # Cria processo
         self.processo = QProcess(self)
@@ -346,11 +347,11 @@ class tab2(QWidget):
     def plotarGraficoTensaoDef(self, caminho=None):
         # Se não foi passado caminho, tenta usar o CSV transformado padrão
         if caminho is None:
-            caminho = os.path.splitext(self.dataPath)[0] + "_transformado.csv"
+            caminho = os.path.splitext(self.dataPath)[0] + "_tensãoDeformação.csv"
 
-        if not os.path.exists(caminho):
-            QMessageBox.warning(self, "Arquivo não encontrado", f"O arquivo '{caminho}' não existe.")
-            return
+        # if not os.path.exists(caminho):
+        #     QMessageBox.warning(self, "Arquivo não encontrado", f"O arquivo '{caminho}' não existe.")
+        #     return
 
         try:
             df = pd.read_csv(caminho)
@@ -381,7 +382,7 @@ class tab2(QWidget):
             QMessageBox.critical(self, "Erro ao plotar", str(e))
     
     def plotarGraficoDadosBrutos(self, caminho):
-        caminho_filtrado = 'dados_filtrados.csv'
+        caminho_filtrado = 'Dados/dados_filtrados.csv'
 
         if not os.path.exists(caminho_filtrado):
             QMessageBox.warning(self, "Arquivo não encontrado", 
@@ -487,7 +488,7 @@ class configWindown(QWidget):
                                 colunas_alvo   = self.colunas_alvo,
                                 janela         = self.janela,
                                 metodo_csv     = filterMethod,
-                                salvar_arquivo = 'dados_filtrados.csv')
+                                salvar_arquivo = 'Dados/dados_filtrados.csv')
             
             QMessageBox.information(self, "Sucesso", f"Arquivo filtrado salvo como\n'dados_filtrados.csv'")
             self.close()

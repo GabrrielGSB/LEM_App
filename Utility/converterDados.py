@@ -15,19 +15,24 @@ def processar_csv(input_csv, escala):
     # Lê nomes das colunas da primeira linha e os dados a partir da segunda
     with open(input_csv, 'r') as f:
         nomes_colunas = f.readline().strip().split(',')
+    print(input_csv)
 
     df = pd.read_csv(input_csv, skiprows=1, names=nomes_colunas)
 
     # Verificações básicas
-    if "kalman_angle_roll" not in df.columns or "time" not in df.columns:
-        raise ValueError("CSV precisa conter as colunas 'kalman_angle_roll' e 'time'.")
+    # if "kalman_angle_roll" not in df.columns or "time" not in df.columns:
+    #     raise ValueError("CSV precisa conter as colunas 'kalman_angle_roll' e 'time'.")
 
-    if "analogRule" not in df.columns:
-        raise ValueError("CSV precisa conter a coluna 'deslocamento'.")
+    # if "analogRule" not in df.columns:
+    #     raise ValueError("CSV precisa conter a coluna 'deslocamento'.")
 
     # --- Conserta os ângulos ---
-    df["kalman_angle_ro_ll"] = df["kalman_angle_roll"] - df["kalman_angle_roll"].iloc[1]
+    df["kalman_angle_roll"] = df["kalman_angle_roll"] - df["kalman_angle_roll"].iloc[1]
     df["kalman_angle_roll"] = df["kalman_angle_roll"].abs()
+
+    # --- Conserta os ângulos ---
+    # df["angle_roll"] = df["angle_roll"] - df["angle_roll"].iloc[1]
+    # df["angle_roll"] = df["angle_roll"].abs()
 
     # --- Calcula a força (N) ---
     if escala == 50:
@@ -47,7 +52,7 @@ def processar_csv(input_csv, escala):
     df_filtrado = df[["time", "Forca (N)", "Deslocamento (mm)"]]
 
     # --- Salva novo CSV ---
-    output_csv = os.path.splitext(input_csv)[0] + "_transformado.csv"
+    output_csv = os.path.splitext(input_csv)[0] + "_tensãoDeformação.csv"
     df_filtrado.to_csv(output_csv, index=False)
     print(f"Arquivo salvo como: {output_csv}")
 
