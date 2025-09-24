@@ -8,6 +8,9 @@ import numpy as np
 import time as t
 def sen(x): return np.sin(x)
 
+caminhoLinuxSalvamentoArquivo    = 'Dados\dados.csv'
+caminhoWindownsSalvamentoArquivo = 'Dados/dados.csv'
+
 def criarGraficoDinamico(csv_file):
     # Inicializa listas para armazenar os dados
     dadosX, dadosY = [], []

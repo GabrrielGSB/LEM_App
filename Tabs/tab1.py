@@ -2,6 +2,11 @@ from All_imports import *
 from Utility.classesAux import *
 import serial.tools.list_ports
 
+caminhoLinuxIniciarColetaDados    = "/home/GGSB/Códigos/LEM_App/Utility/iniciarColetaDados.py"
+caminhoWindownsIniciarColetaDados = "Utility\iniciarColetaDados.py"
+
+caminhoLinuxImagemComboBox    = "Imagens/im.jpg"
+caminhoWindownsImagemComboBox = "Imagens\im.jpg"
 
 """
 Essa TAB tem a função de servir como interface inicial, buscando:
@@ -110,10 +115,10 @@ class tab1(QWidget):
       
 
     def mostrarImagemComboBox(self, texto):
-        caminho_imagem = f"Imagens/{texto}.png"  # Supondo que as imagens tenham o mesmo nome das máquinas
+        caminho_imagem = f"Imagens/{texto}.png"  
 
         # definida uma imagem padrão caso o a imagem escolhida nn existir
-        if not os.path.exists(caminho_imagem): caminho_imagem = "Imagens/im.jpg" 
+        if not os.path.exists(caminho_imagem): caminho_imagem = caminhoLinuxImagemComboBox 
 
         imageComboBox = QPixmap(caminho_imagem)
 
@@ -140,7 +145,7 @@ class tab1(QWidget):
         #-------------------------------------------------------------------------
 
         # Executa o script de coleta com argumento do CSV
-        self.executarScript("Utility\iniciarColetaDados.py")
+        self.executarScript(caminhoLinuxIniciarColetaDados)
         
 
     def executarScript(self, scriptPath):

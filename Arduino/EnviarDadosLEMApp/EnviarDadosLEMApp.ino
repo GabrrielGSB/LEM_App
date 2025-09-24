@@ -1,4 +1,3 @@
-//#include "Drone.h"
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include "WiFi.h"
@@ -18,24 +17,26 @@ bool calibration;
 Adafruit_MPU6050 mpu;
 WiFiServer server(80);
 
-
+// Configurações da rede WiFi do servidor (AP)
 const char *ssid     = "ESP32_Server";
 const char *password = "123456789";
-const char *host     = "192.168.4.1"; 
-const uint8_t port   = 80;
 
-struct dadosSensor 
+// IP e porta do servidor
+const char *host   = "192.168.4.1"; // IP do servidor ESP32
+const uint8_t port = 80;
+
+struct sensorData 
 { 
-  float angleRoll,anglePitch, kalmanAngleRoll, kalmanAnglePitch, deslocamento; 
+//  float angleRoll,anglePitch, kalmanAngleRoll, kalmanAnglePitch, deslocamento; 
+  float angleRoll, deslocamento; 
 };
-
 
 void setup() 
 {
   Serial.begin(115200);
   pinMode(sensorDeslocamento, INPUT);
+
   pinMode(2, OUTPUT);
-  
   MPUconfigSetup();
   iniciarServidor();
   CalibrarMPU();  
@@ -49,25 +50,22 @@ void loop()
   int analog = analogRead(sensorDeslocamento);
 
   // Aplica o filtro nos angulos Roll e Pitch
-  Kalman1D(kalmanAngleRoll,  KalmanUncertaintyAngleRoll,  RateRoll,  AngleRoll);  
-  Kalman1D(kalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch);
+//  Kalman1D(kalmanAngleRoll,  KalmanUncertaintyAngleRoll,  RateRoll,  AngleRoll);  
+//  Kalman1D(kalmanAnglePitch, KalmanUncertaintyAnglePitch, RatePitch, AnglePitch);
 
   WiFiClient client = server.available();
   if (client)                                       
   {
-      dadosSensor dados = {AngleRoll, AnglePitch, kalmanAngleRoll, kalmanAnglePitch, analog};    
-      client.write((uint8_t*)&dados, sizeof(dados));   
-      digitalWrite(2, HIGH);                           
+//      sensorData dados = {AngleRoll, AnglePitch, kalmanAngleRoll, kalmanAnglePitch, analog};
+      sensorData dados = {AngleRoll, analog}; 
+      digitalWrite(2, HIGH);       
+      client.write((uint8_t*)&dados, sizeof(dados)); 
+      // delay(100);                              
   }
-  else 
-  {
-    digitalWrite(2, LOW);
-    delay(10);   
-  }
+  else delay(10);   
       
-  delay(50);                             
+  delay(1);                             
 }
-
 
 void iniciarServidor()
 {
@@ -115,9 +113,9 @@ void MPUgetSignalsLoop()
   AnglePitch = -atan(AceX/sqrt(AceY*AceY + AceZ*AceZ))*1/(3.142/180);
   
   if (calibration == true){
-  RateRoll  -= (RateCalibrationRoll/2000)  ;
-  RatePitch -= (RateCalibrationPitch/2000) ;
-  RateYaw   -= (RateCalibrationYaw/2000)   ;
+  RateRoll  -= (RateCalibrationRoll/2000)  - 1.2;
+  RatePitch -= (RateCalibrationPitch/2000) - 1.5;
+  RateYaw   -= (RateCalibrationYaw/2000)   - 0;
   AceX -= 0.02;
   AceY -= 0.03;
   AceZ -= 0.13;

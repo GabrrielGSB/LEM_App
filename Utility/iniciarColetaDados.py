@@ -17,18 +17,23 @@ def iniciarColetaDados(CSV_name, porta_serial):
             line = data.readline().decode('utf-8').split(',')
 
             try:
+                # angleRoll        = line[0]
+                # kalmanAngleRoll  = line[1]
+                # anglePitch       = line[2]
+                # kalmanAnglePitch = line[3]
+                # analogRule       = line[4]
+                # tempo            = line[5].strip()
+
                 angleRoll        = line[0]
-                kalmanAngleRoll  = line[1]
-                anglePitch       = line[2]
-                kalmanAnglePitch = line[3]
-                analogRule       = line[4]
-                tempo            = line[5].strip()
+                analogRule       = line[1]
+                tempo            = line[2].strip()
 
                 with open(CSV_name, mode='a', newline='') as file:
                     writer = csv.writer(file)
-                    writer.writerow([angleRoll, kalmanAngleRoll,
-                                     anglePitch, kalmanAnglePitch,
-                                     analogRule, tempo])
+                    # writer.writerow([angleRoll, kalmanAngleRoll,
+                    #                  anglePitch, kalmanAnglePitch,
+                    #                  analogRule, tempo])
+                    writer.writerow([angleRoll, analogRule, tempo])
                     file.flush()
             except Exception as e:
                 print("Erro ao processar linha:", e)
@@ -46,12 +51,13 @@ if __name__ == "__main__":
     porta_serial = sys.argv[1]
 
     dadosTempo = datetime.now().strftime("%Y_%m_%d__%H_%M_%S")
-    CSV_name = f"Dados\dados_{dadosTempo}.csv"
+    CSV_name = f"Dados/dados_{dadosTempo}.csv"
 
     with open(CSV_name, mode='w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['angle_roll', 'kalman_angle_roll',
-                         'angle_pitch', 'kalman_angle_pitch',
-                         'analogRule', 'time'])
+        # writer.writerow(['angle_roll', 'kalman_angle_roll',
+        #                  'angle_pitch', 'kalman_angle_pitch',
+        #                  'analogRule', 'time'])
+        writer.writerow(['angle_roll', 'analogRule', 'time'])
 
     iniciarColetaDados(CSV_name, porta_serial)

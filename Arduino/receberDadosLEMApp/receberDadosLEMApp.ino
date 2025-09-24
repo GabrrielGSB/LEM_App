@@ -5,7 +5,8 @@ const char *password = "123456789";
 const char *host     = "192.168.4.1"; 
 const uint8_t port   =  80;
 
-struct sensorData { float AngleRoll,AnglePitch,kalmanAngleRoll,kalmanAnglePitch,deslocamento; };
+//struct sensorData { float AngleRoll,AnglePitch,kalmanAngleRoll,kalmanAnglePitch,deslocamento; };
+struct sensorData { float AngleRoll, deslocamento; };
 
 WiFiClient client;
 
@@ -44,11 +45,15 @@ void receberDados()
     sensorData dadosRecebidos;
     client.read((uint8_t*)&dadosRecebidos, sizeof(dadosRecebidos));
  
-    Serial.printf("%f, %f, %f, %f, %f, %d \n",
+//    Serial.printf("%f, %f, %f, %f, %f, %d \n",
+//                   dadosRecebidos.AngleRoll,
+//                   dadosRecebidos.AnglePitch,
+//                   dadosRecebidos.kalmanAngleRoll,
+//                   dadosRecebidos.kalmanAnglePitch,
+//                   dadosRecebidos.deslocamento,
+//                   millis());
+    Serial.printf("%f, %f, %d \n",
                    dadosRecebidos.AngleRoll,
-                   dadosRecebidos.AnglePitch,
-                   dadosRecebidos.kalmanAngleRoll,
-                   dadosRecebidos.kalmanAnglePitch,
                    dadosRecebidos.deslocamento,
                    millis());
     digitalWrite(2, HIGH);
