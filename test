@@ -1,0 +1,43 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- PASSO 1: Seus dados de calibração ---
+# (Substitua pelos dados que você coletou)
+angulo_medido = np.array([1.03, 1.21, 1.6, 1.97]) # Eixo X
+forca_conhecida = np.array([1, 2, 4, 6])         # Eixo Y
+
+# --- PASSO 2: Encontrar o modelo matemático (Regressão Polinomial) ---
+# Vamos ajustar um polinômio de grau 2 (uma parábola). Você pode testar outros graus (3, 4...).
+# A função polyfit retorna os coeficientes do polinômio (a, b, c para ax^2 + bx + c)
+coeficientes = np.polyfit(angulo_medido, forca_conhecida, 4)
+
+# Cria uma função utilizável a partir dos coeficientes
+funcao_conversao = np.poly1d(coeficientes)
+
+# Imprime a equação encontrada
+print(f"Função de conversão encontrada:\nForça = {funcao_conversao}\n")
+print(f"Coeficientes (a, b, c): {coeficientes}")
+
+
+# --- PASSO 3: Usar a função e validar ---
+# Agora, imagine que seu sensor MPU6050 mediu um novo ângulo de 20 graus
+novo_angulo = 20.0
+forca_calculada = funcao_conversao(novo_angulo)
+
+print(f"Para um ângulo medido de {novo_angulo:.1f} graus, a força calculada é de {forca_calculada:.2f} N.")
+
+
+# --- (Opcional) PASSO 4: Visualizar o ajuste ---
+# Gera pontos para a linha da curva de ajuste
+angulo_curva = np.linspace(min(angulo_medido), max(angulo_medido), 100)
+forca_curva = funcao_conversao(angulo_curva)
+
+plt.figure(figsize=(10, 6))
+plt.scatter(angulo_medido, forca_conhecida, color='red', label='Dados de Calibração') # Pontos originais
+plt.plot(angulo_curva, forca_curva, color='blue', label='Curva de Ajuste Polinomial (Grau 2)') # Curva ajustada
+plt.title('Calibração: Ângulo do Sensor vs. Força da Máquina')
+plt.xlabel('Ângulo Medido pelo MPU6050 (graus)')
+plt.ylabel('Força Aplicada (N)')
+plt.legend()
+plt.grid(True)
+plt.show()

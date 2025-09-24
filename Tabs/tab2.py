@@ -6,7 +6,7 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
-def aplicar_filtros_csv(nome_arquivo, colunas_alvo, janela=100, metodo_csv='ponderada_gaussiana', salvar_arquivo='Dados/dados_filtrados.csv'):
+def aplicar_filtros_csv(nome_arquivo, colunas_alvo, janela=100, metodo_csv='ponderada_gaussiana', salvar_arquivo='Dados\dados_filtrados.csv'):
     """
     Aplica um filtro de média móvel (simples ou ponderada) em colunas de um arquivo CSV.
 
@@ -89,6 +89,55 @@ class tab2(QWidget):
     def __init__(self, imagemFundo):
         super().__init__()
 
+       ### MODIFICADO: Bloco de Calibração para Múltiplas Escalas ###
+        # Agora armazenamos os dados de calibração em um dicionário,
+        # onde a chave é a escala (50, 100, 200).
+        # ---------------------------------------------------------------------
+        # PASSO 1: Insira seus dados de calibração para CADA ESCALA aqui.
+        # A unidade da força aqui é Toneladas, para corresponder ao seu gráfico.
+        self.dados_calibracao = {
+            50: {
+                'angulos': np.array([1.1, 3.39, 8.2, 12.9]),
+                'forcas':  np.array([1, 2, 4, 6])  # Força em Toneladas
+            },
+            100: {
+                'angulos': np.array([0.9, 1.8, 3.6, 5.45]),
+                'forcas':  np.array([1, 2, 4, 6])  # Força em Toneladas
+            },
+            200: {
+                # ATENÇÃO: Adicione aqui os dados reais para a escala 200
+                'angulos': np.array([0.5, 1.0, 2.0, 3.0]),
+                'forcas':  np.array([1, 2, 4, 6])  # Força em Toneladas (DADOS DE EXEMPLO)
+            }
+        }
+        # A função de conversão será criada dinamicamente, então a removemos daqui.
+        # ---------------------------------------------------------------------
+
+        ### NOVO: Bloco de Calibração 2: ANALOGRULE para DESLOCAMENTO ###
+        # Este sistema é independente da escala de força.
+        # ---------------------------------------------------------------------
+        # PASSO 1B: Insira seus dados de calibração para o sensor analógico.
+        # Ex: valores lidos do sensor e o deslocamento real correspondente em mm.
+        self.calibracao_analog_rule = {
+            'valores_raw':     np.array([250, 745, 1700, 4094]),  # Valores brutos lidos (ex: 0-1023)
+            'deslocamento_mm': np.array([50, 100, 200, 400])      # Deslocamento real em mm
+        }
+
+        # PASSO 2B: Cria o modelo de conversão para o deslocamento.
+        # Um polinômio de grau 1 (reta) geralmente é suficiente para sensores analógicos.
+        try:
+            dados_analog = self.calibracao_analog_rule
+            # Usamos grau 1 para uma conversão linear. Mude para 2 se não for linear.
+            coef_analog = np.polyfit(dados_analog['valores_raw'], dados_analog['deslocamento_mm'], 2)
+            self.funcao_conversao_deslocamento = np.poly1d(coef_analog)
+            print(">>> Função de calibração AnalogRule->Deslocamento criada com sucesso.")
+            print(f">>> Equação: Deslocamento = {self.funcao_conversao_deslocamento}")
+        except Exception as e:
+            print(f"[ERRO] Falha ao criar a função de calibração de deslocamento: {e}")
+            self.funcao_conversao_deslocamento = None
+        # ---------------------------------------------------------------------
+
+
         self.dataPath = None
 
         # Plano de fundo---------------------------------------------------
@@ -123,7 +172,7 @@ class tab2(QWidget):
 
         # Botão para abrir nova janela-------------------------------------------
         self.configButton = QPushButton("Aplicar Filtro", self.planoDeFundo)
-        self.configButton.move(300, 175)
+        self.configButton.move(300, 130)
         self.configButton.setFixedSize(400, 50)
         self.configButton.setStyleSheet("""QPushButton {background-color: blue; 
                                                         color: white; font-size: 14px;
@@ -160,10 +209,27 @@ class tab2(QWidget):
 
         # Label para mostrar nome do arquivo
         self.label = QLabel("")
+
+        ### NOVO: Dropdown para selecionar a Escala ###
+        self.label_escala = QLabel("Selecionar Escala:", self.planoDeFundo)
+        self.label_escala.move(440, 230)
+        self.label_escala.setStyleSheet("color: white; font-weight: bold; font-size: 14px;")
+
+        self.dropdown_escala = QComboBox(self.planoDeFundo)
+        self.dropdown_escala.setGeometry(420, 250, 180, 30)
+        # Adicionamos o texto visível e o dado numérico (50, 100, 200)
+        self.dropdown_escala.addItem("Escala 50 Ton", 50)
+        self.dropdown_escala.addItem("Escala 100 Ton", 100)
+        self.dropdown_escala.addItem("Escala 200 Ton", 200)
+        self.dropdown_escala.setStyleSheet("""QComboBox {background-color: #F0E68C; 
+                                                border: 2px solid #DAA520;
+                                                border-radius: 10px;
+                                                padding: 5px; font-size: 14px; color: #8B4513;}""")
+
         
         # Dropdowns de seleção de eixo X e Y
         self.dropdown_x = QComboBox(self.planoDeFundo)
-        self.dropdown_x.setGeometry(200, 300, 180, 30)
+        self.dropdown_x.setGeometry(200, 310, 180, 30)
 
         if hasattr(self.dropdown_x, "setPlaceholderText"):
          self.dropdown_x.setPlaceholderText("Selecionar eixo X")
@@ -192,7 +258,7 @@ class tab2(QWidget):
                                                                       font-size:                  14px;}""")
 
         self.dropdown_y = QComboBox(self.planoDeFundo)
-        self.dropdown_y.setGeometry(420, 300, 180, 30)
+        self.dropdown_y.setGeometry(420, 310, 180, 30)
 
         if hasattr(self.dropdown_y, "setPlaceholderText"):
          self.dropdown_y.setPlaceholderText("Selecionar eixo Y")
@@ -222,7 +288,7 @@ class tab2(QWidget):
                         # Dropdown para segundo eixo Y
         
         self.dropdown_y2 = QComboBox(self.planoDeFundo)
-        self.dropdown_y2.setGeometry(640, 300, 180, 30)
+        self.dropdown_y2.setGeometry(640, 310, 180, 30)
         if hasattr(self.dropdown_y2, "setPlaceholderText"):
          self.dropdown_y2.setPlaceholderText("Selecionar 2° eixo Y")
         else:
@@ -274,7 +340,7 @@ class tab2(QWidget):
             self.layout_h.addWidget(self.label)
 
             # Carregar colunas do arquivo filtrado, se existir
-            caminho_filtrado = 'Dados/dados_filtrados.csv'
+            caminho_filtrado = 'Dados\dados_filtrados.csv'
             if os.path.exists(caminho_filtrado):
                 try:
                     df_filtrado = pd.read_csv(caminho_filtrado)
@@ -320,7 +386,7 @@ class tab2(QWidget):
         
         escala = "100"
 
-        scriptPath = "/home/raitecgeral/Gonzaga/LEM_App/LEM_App/Utility/converterDados.py"
+        scriptPath = "Utility\converterDados.py"
 
         # Saída esperada
         print(self.dataPath)
@@ -337,7 +403,7 @@ class tab2(QWidget):
 
 
     def ler_saida(self):
-        saida = self.processo.readAllStandardOutput().data().decode()
+        saida = self.processo.readAllStandardOutput().data().decode("cp1252")
         print("STDOUT:", saida)
 
     def ler_erro(self):
@@ -381,58 +447,107 @@ class tab2(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Erro ao plotar", str(e))
     
-    def plotarGraficoDadosBrutos(self, caminho):
-        caminho_filtrado = 'Dados/dados_filtrados.csv'
-
+    def plotarGraficoDadosBrutos(self):
+        caminho_filtrado = 'Dados\dados_filtrados.csv'
         if not os.path.exists(caminho_filtrado):
-            QMessageBox.warning(self, "Arquivo não encontrado", 
-                                "O arquivo 'dados_filtrados.csv' ainda não foi gerado.")
+            QMessageBox.warning(self, "Arquivo não encontrado", "O arquivo 'dados_filtrados.csv' ainda não foi gerado.")
             return
 
         eixo_x  = self.dropdown_x.currentText()
         eixo_y1 = self.dropdown_y.currentText()
         eixo_y2 = self.dropdown_y2.currentText()
-
-        if not eixo_x or not eixo_y1:
-            QMessageBox.warning(self, "Seleção inválida", 
-                                "Selecione pelo menos os eixos X e Y1.")
+        escala_selecionada = self.dropdown_escala.currentData()
+        
+        if not all([eixo_x, eixo_y1, escala_selecionada]):
+            QMessageBox.warning(self, "Seleção inválida", "Selecione a Escala e pelo menos os eixos X e Y1.")
             return
 
-        if eixo_y2 and eixo_y1 == eixo_y2:
-            QMessageBox.warning(self, "Seleção inválida", 
-                                "Os eixos Y1 e Y2 não podem ser iguais.")
-            return
+        # --- Criação dinâmica das funções de conversão ---
+        try:
+            # Função de conversão 1: Força (dependente da escala)
+            dados_calib_forca = self.dados_calibracao[escala_selecionada]
+            coef_forca = np.polyfit(dados_calib_forca['angulos'], dados_calib_forca['forcas'], 2)
+            funcao_conversao_forca = np.poly1d(coef_forca)
+            print(f">>> Usando calibração de FORÇA para Escala {escala_selecionada} Ton.")
 
+            # Função de conversão 2: Deslocamento (pega do self)
+            funcao_conversao_deslocamento = self.funcao_conversao_deslocamento
+            if not funcao_conversao_deslocamento:
+                 raise ValueError("Função de calibração de deslocamento não foi criada.")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Erro de Calibração", f"Não foi possível criar os modelos de conversão.\nErro: {e}")
+            return
+        
+        # --- Leitura e Conversão dos Dados ---
         try:
             df = pd.read_csv(caminho_filtrado)
+            
+            # Inicializa valores e rótulos
+            x_vals  = df[eixo_x].to_numpy(copy=True) # Usamos copy=True para garantir que não estamos modificando o dataframe
+            y1_vals = df[eixo_y1].to_numpy(copy=True)
+            y2_vals = df[eixo_y2].to_numpy(copy=True) if eixo_y2 else None
 
-            # validações
-            for eixo, nome in [(eixo_x, "X"), (eixo_y1, "Y1")]:
-                if eixo not in df.columns:
-                    raise ValueError(f"Eixo {nome} '{eixo}' não encontrado no arquivo.")
+            label_eixo_x = eixo_x
+            label_y1_final = eixo_y1
+            label_y2_final = eixo_y2 if eixo_y2 else ""
 
-            if eixo_y2 and eixo_y2 not in df.columns:
-                raise ValueError(f"Eixo Y2 '{eixo_y2}' não encontrado no arquivo.")
+            # Converte EIXO X se necessário
+            if eixo_x == 'analogRule_filtrada':
+                x_vals = funcao_conversao_deslocamento(x_vals)
+                label_eixo_x = 'Deslocamento (mm)'
+            
+            # Converte EIXO Y1 se necessário
+            if eixo_y1 == 'angle_roll_filtrada':
+                y1_vals = funcao_conversao_forca(y1_vals)
+                label_y1_final = f'Força ({escala_selecionada} Ton)'
+            elif eixo_y1 == 'analogRule_filtrada':
+                y1_vals = funcao_conversao_deslocamento(y1_vals)
+                label_y1_final = 'Deslocamento (mm)'
+            
+            # Converte EIXO Y2 se necessário
+            if eixo_y2:
+                if eixo_y2 == 'angle_roll_filtrada':
+                    y2_vals = funcao_conversao_forca(y2_vals)
+                    label_y2_final = f'Força ({escala_selecionada} Ton)'
+                elif eixo_y2 == 'analogRule_filtrada':
+                    y2_vals = funcao_conversao_deslocamento(y2_vals)
+                    label_y2_final = 'Deslocamento (mm)'
 
-            # converte tudo pra numpy para blindar contra erros de indexação
-            x_vals  = df[eixo_x].to_numpy()
-            y1_vals = df[eixo_y1].to_numpy()
-            y2_vals = df[eixo_y2].to_numpy() if eixo_y2 else None
-
-            # plotagem
+            # --- Plotagem ---
             plt.figure(figsize=(10, 6))
-            plt.plot(x_vals, y1_vals, label=eixo_y1, linewidth=2)
+            ax1 = plt.gca() # Get current axes
 
+            # Plota a primeira linha
+            color1 = 'tab:blue'
+            ax1.plot(x_vals, y1_vals, label=label_y1_final, linewidth=2, color=color1)
+            ax1.set_xlabel(label_eixo_x)
+            ax1.set_ylabel(label_y1_final, color=color1)
+            ax1.tick_params(axis='y', labelcolor=color1)
+
+            # Plota a segunda linha (se existir) usando um segundo eixo Y para clareza
             if y2_vals is not None:
-                plt.plot(x_vals, y2_vals, label=eixo_y2, linewidth=2)
+                ax2 = ax1.twinx()  # Cria um segundo eixo Y que compartilha o mesmo eixo X
+                color2 = 'tab:red'
+                ax2.plot(x_vals, y2_vals, label=label_y2_final, linewidth=2, linestyle='--', color=color2)
+                ax2.set_ylabel(label_y2_final, color=color2)
+                ax2.tick_params(axis='y', labelcolor=color2)
+                
+            plt.title(f"Gráfico de Dados (Escala {escala_selecionada} Toneladas)")
+            # Coleta os "handles" e "labels" de ambos os eixos para uma legenda unificada
+            handles1, labels1 = ax1.get_legend_handles_labels()
+            if 'ax2' in locals():
+                handles2, labels2 = ax2.get_legend_handles_labels()
+                ax1.legend(handles1 + handles2, labels1 + labels2, loc='best')
+            else:
+                ax1.legend(handles1, labels1, loc='best')
 
-            plt.xlabel(eixo_x)
-            plt.ylabel("Valor")
-            plt.title("Gráfico de Dados Filtrados")
-            plt.legend()
-            plt.grid(True)
+            ax1.grid(True)
             plt.tight_layout()
             plt.show()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Erro ao plotar", str(e))
 
         except Exception as e:
             QMessageBox.critical(self, "Erro ao plotar", str(e))
@@ -488,7 +603,7 @@ class configWindown(QWidget):
                                 colunas_alvo   = self.colunas_alvo,
                                 janela         = self.janela,
                                 metodo_csv     = filterMethod,
-                                salvar_arquivo = 'Dados/dados_filtrados.csv')
+                                salvar_arquivo = 'Dados\dados_filtrados.csv')
             
             QMessageBox.information(self, "Sucesso", f"Arquivo filtrado salvo como\n'dados_filtrados.csv'")
             self.close()
